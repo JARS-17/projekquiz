@@ -1,0 +1,5 @@
+Langkah Selanjutnya:
+Login Screen: Buat antarmuka untuk login di file login.py.
+Quiz UI: Buat antarmuka untuk kuis di file quiz.py.
+Soal Manager: Implementasikan fitur tambah, edit, simpan soal di file question_manager.py.
+Skor: Buat sistem penilaian dan tampilkan skor di akhir kuis.

@@ -27,7 +27,7 @@ def signup():
             file=open('data/datasheet.txt', 'w')
             w=file.write(str(r))
 
-            messagebox.showinfo('Signup', 'Sucessfully sign up')
+            messagebox.showinfo('Signup', 'Sucessfully sign  up')
         
         except:
             file=open('data/datasheet.txt', 'w')

@@ -157,26 +157,36 @@ def admin_window():
         for widget in right_frame.winfo_children():
             widget.destroy()
 
-    def load_results():
-        try:
-            with open(RESULT_FILE, 'r') as file:
-                return json.load(file)
-        except (FileNotFoundError, json.JSONDecodeError) as e:
-            print("Error loading results:", e)
-            return []
-
     def view_results():
         clear_right_frame()
         results = load_results()
-        print("Loaded Results:", results)  
+
+        # Debugging - pastikan hasil dimuat dengan benar
+        print("Loaded Results:", results)
+
+        # Validasi jika file kosong atau data tidak valid
         if not results:
-            Label(right_frame, text="Belum ada hasil ujian.", font=('Arial', 14), fg='red').pack(pady=10)
+            Label(right_frame, text="Belum ada hasil ujian.", font=('Arial', 14), fg='red', bg='white').pack(pady=10)
             return
-        
-        sorted_results = sorted(results, key=lambda x: x.get('score', 0), reverse=True)
-        Label(right_frame, text="Hasil Ujian", font=('Arial', 16, 'bold')).pack(pady=10)
-        for result in sorted_results:
-            Label(right_frame, text=f"{result.get('username', 'Unknown')}: {result.get('score', 0)}", anchor="w").pack(fill=X, padx=10, pady=2)
+
+        # Sorting data hasil ujian
+        try:
+            sorted_results = sorted(
+                results, 
+                key=lambda x: x.get('score', 0), 
+                reverse=True
+            )
+        except Exception as e:
+            print(f"Error sorting results: {e}")
+            Label(right_frame, text="Format data tidak valid!", font=('Arial', 14), fg='red', bg='white').pack(pady=10)
+            return
+
+        # Menampilkan hasil
+        Label(right_frame, text="Hasil Ujian", font=('Arial', 16, 'bold'), bg='white').pack(pady=10)
+        for idx, result in enumerate(sorted_results, start=1):
+            username = result.get('username', 'Unknown')
+            score = result.get('score', 0)
+            Label(right_frame, text=f"{idx}. {username}: {score}", anchor="w", bg='white').pack(fill=X, padx=10, pady=2)
 
 
 

@@ -1,1 +1,4 @@
-{"ginda": {"password": "$2b$12$L9GgBJ0fgV0W97SEpzB2uunigXf9kP59wHu15/0sLHTIw2d53NaRK", "role": "admin"}}
+{"ginda": {"password": "$2b$12$L9GgBJ0fgV0W97SEpzB2uunigXf9kP59wHu15/0sLHTIw2d53NaRK", "role": "admin"}, 
+"peserta1": {"password": "$2b$12$Mrq4M9aH21T8VTQqAU1KyeUEJWC0Ju/OL3k3vwHaJemafuZ3t/Kk6", "role": "peserta"}, 
+"peserta2": {"password": "$2b$12$yYrumhEoZQFpF9SQeTA1BuiAV7bEYwZVc6e7amFKkOCXVZ0lBMRxO", "role": "peserta"}, 
+"peserta3": {"password": "$2b$12$.yNKyNKNpz3INjs9hzFRwuK.RbZ11HAc38i0Yyo7fFGvlF6d8F6cG", "role": "peserta"}}

@@ -1,0 +1,363 @@
+from tkinter import *
+from tkinter import messagebox, simpledialog
+import bcrypt
+import json
+import os
+
+# Membuat folder 'data' jika belum ada
+if not os.path.exists('data'):
+    os.makedirs('data')
+
+DATA_FILE = 'data/datasheet.txt'
+QUESTION_FILE = 'data/questions.json'
+
+# Fungsi Hash Password
+def hash_password(password):
+    return bcrypt.hashpw(password.encode('utf-8'), bcrypt.gensalt())
+
+def check_password(hashed, password):
+    return bcrypt.checkpw(password.encode('utf-8'), hashed)
+
+# Fungsi untuk Load Data Users
+def load_users():
+    try:
+        with open(DATA_FILE, 'rb') as file:
+            return json.load(file)
+    except FileNotFoundError:
+        return {}
+    except json.JSONDecodeError:
+        return {}
+
+def save_users(users):
+    with open(DATA_FILE, 'w') as file:
+        json.dump(users, file)
+
+# Fungsi untuk Load Soal
+def load_questions():
+    try:
+        with open(QUESTION_FILE, 'r') as file:
+            return json.load(file)
+    except (FileNotFoundError, json.JSONDecodeError):
+        return []
+
+def save_questions(questions):
+    with open(QUESTION_FILE, 'w') as file:
+        json.dump(questions, file)
+
+# Fungsi Sign Up
+def signup_window():
+    def register():
+        username = user_entry.get()
+        password = pass_entry.get()
+        role = role_var.get()
+
+        if not username or not password or not role:
+            messagebox.showerror('Error', 'Semua kolom harus diisi!')
+            return
+
+        users = load_users()
+
+        if username in users:
+            messagebox.showerror('Error', 'Username sudah terdaftar!')
+            return
+
+        hashed_password = hash_password(password).decode('utf-8')
+        users[username] = {'password': hashed_password, 'role': role}
+        save_users(users)
+        messagebox.showinfo('Sukses', f'Akun {username} berhasil dibuat!')
+        signup.destroy()
+
+    signup = Toplevel()
+    signup.title('Sign Up')
+    signup.state('zoomed')
+    signup.configure(bg='#fff')
+
+    img = PhotoImage(file='assets/login.png')  
+    resized_img = img.subsample(1, 1)
+    img_label = Label(signup, image=resized_img, border=0, bg='white')
+    img_label.image = resized_img
+    img_label.place(relx=0.3, rely=0.5, anchor='center')
+
+    frame = Frame(signup, width=400, height=400, bg='#fff')
+    frame.place(relx=0.7, rely=0.5, anchor='center')
+
+    heading = Label(frame, text='Sign Up', fg="#57a1f8", bg='white', font=('Microsoft Yahei UI Light', 26, 'bold'))
+    heading.pack(pady=20)
+
+    Label(frame, text='Username', bg='white', fg='black', font=('Microsoft Yahei UI Light', 12)).pack(pady=5)
+    user_entry = Entry(frame, width=30, font=('Microsoft Yahei UI Light', 12))
+    user_entry.pack(pady=10)
+
+    Label(frame, text='Password', bg='white', fg='black', font=('Microsoft Yahei UI Light', 12)).pack(pady=5)
+    pass_entry = Entry(frame, width=30, show="*", font=('Microsoft Yahei UI Light', 12))
+    pass_entry.pack(pady=10)
+
+    Label(frame, text='Role (admin/peserta)', bg='white', fg='black', font=('Microsoft Yahei UI Light', 12)).pack(pady=5)
+    role_var = StringVar()
+    role_menu = OptionMenu(frame, role_var, 'admin', 'peserta')
+    role_menu.pack(pady=10)
+
+    Button(frame, text='Register', bg="#57a1f8", fg="white", font=('Microsoft Yahei UI Light', 12), command=register).pack(pady=20)
+
+
+# Fungsi Sign In
+def signin_window():
+    def login():
+        username = user_entry.get()
+        password = pass_entry.get()
+
+        users = load_users()
+
+        if username not in users or not check_password(users[username]['password'].encode('utf-8'), password):
+            messagebox.showerror('Error', 'Username atau password salah!')
+            return
+
+        role = users[username]['role']
+        messagebox.showinfo('Sukses', f'Login berhasil sebagai {role}!')
+        signin.destroy()
+        if role == 'admin':
+            admin_window()
+        else:
+            quiz_window()
+
+    signin = Tk()
+    signin.title('Sign In')
+    signin.state('zoomed')
+    signin.configure(bg='#fff')
+
+    img = PhotoImage(file='assets/login.png')  
+    resized_img = img.subsample(1, 1)  
+    img_label = Label(signin, image=resized_img, border=0, bg='white')
+    img_label.image = resized_img
+    img_label.place(relx=0.3, rely=0.5, anchor='center')
+
+    frame = Frame(signin, width=400, height=400, bg='#fff')
+    frame.place(relx=0.7, rely=0.5, anchor='center')
+
+    heading = Label(frame, text='Sign In', fg="#57a1f8", bg='white', font=('Microsoft Yahei UI Light', 26, 'bold'))
+    heading.pack(pady=20)
+
+    Label(frame, text='Username', bg='white', fg='black', font=('Microsoft Yahei UI Light', 12)).pack(pady=5)
+    user_entry = Entry(frame, width=30, font=('Microsoft Yahei UI Light', 12))
+    user_entry.pack(pady=10)
+
+    Label(frame, text='Password', bg='white', fg='black', font=('Microsoft Yahei UI Light', 12)).pack(pady=5)
+    pass_entry = Entry(frame, width=30, show="*", font=('Microsoft Yahei UI Light', 12))
+    pass_entry.pack(pady=10)
+
+    Button(frame, text='Sign In', bg="#57a1f8", fg="white", font=('Microsoft Yahei UI Light', 12), command=login).pack(pady=20)
+    Button(frame, text='Don\'t have an account? Sign Up', bg="white", fg="#57a1f8", border=0, command=signup_window).pack()
+
+    signin.mainloop()
+
+
+# Admin Window
+def admin_window():
+    def clear_right_frame():
+        for widget in right_frame.winfo_children():
+            widget.destroy()
+
+    def view_results():
+        clear_right_frame()
+        results = load_results()
+
+        # Debugging - pastikan hasil dimuat dengan benar
+        print("Loaded Results:", results)
+
+        # Validasi jika file kosong atau data tidak valid
+        if not results:
+            Label(right_frame, text="Belum ada hasil ujian.", font=('Arial', 14), fg='red', bg='white').pack(pady=10)
+            return
+
+        # Sorting data hasil ujian
+        try:
+            sorted_results = sorted(
+                results, 
+                key=lambda x: x.get('score', 0), 
+                reverse=True
+            )
+        except Exception as e:
+            print(f"Error sorting results: {e}")
+            Label(right_frame, text="Format data tidak valid!", font=('Arial', 14), fg='red', bg='white').pack(pady=10)
+            return
+
+        # Menampilkan hasil
+        Label(right_frame, text="Hasil Ujian", font=('Arial', 16, 'bold'), bg='white').pack(pady=10)
+        for idx, result in enumerate(sorted_results, start=1):
+            username = result.get('username', 'Unknown')
+            score = result.get('score', 0)
+            Label(right_frame, text=f"{idx}. {username}: {score}", anchor="w", bg='white').pack(fill=X, padx=10, pady=2)
+
+
+
+    def add_question():
+        clear_right_frame()
+        Label(right_frame, text='Tambah Soal', font=('Arial', 16, 'bold')).pack(pady=10)
+
+        def save_new_question():
+            question = question_entry.get()
+            options = [option_entries[i].get() for i in range(4)]
+            correct = int(correct_option.get())
+            questions = load_questions()
+            questions.append({'question': question, 'options': options, 'correct_option': correct})
+            save_questions(questions)
+            messagebox.showinfo('Sukses', 'Soal berhasil ditambahkan!')
+            clear_right_frame()
+
+        Label(right_frame, text='Pertanyaan:').pack(anchor="w", padx=10)
+        question_entry = Entry(right_frame, width=50)
+        question_entry.pack(padx=10, pady=5)
+
+        option_entries = []
+        for i in range(4):
+            Label(right_frame, text=f'Opsi {i+1}:').pack(anchor="w", padx=10)
+            option_entry = Entry(right_frame, width=50)
+            option_entry.pack(padx=10, pady=2)
+            option_entries.append(option_entry)
+
+        Label(right_frame, text='Jawaban Benar (0-3):').pack(anchor="w", padx=10)
+        correct_option = Entry(right_frame, width=10)
+        correct_option.pack(padx=10, pady=5)
+
+        Button(right_frame, text='Simpan Soal', command=save_new_question).pack(pady=10)
+
+    def edit_question():
+        clear_right_frame()
+        questions = load_questions()
+        Label(right_frame, text='Edit Soal', font=('Arial', 16, 'bold')).pack(pady=10)
+        Label(right_frame, text='Index Soal:').pack(padx=10)
+        index_entry = Entry(right_frame, width=10)
+        index_entry.pack(pady=5)
+
+        def load_question():
+            try:
+                index = int(index_entry.get())
+                if 0 <= index < len(questions):
+                    clear_right_frame()
+                    Label(right_frame, text='Edit Soal', font=('Arial', 16, 'bold')).pack(pady=10)
+
+                    question_var = StringVar(value=questions[index]['question'])
+                    Label(right_frame, text='Pertanyaan:').pack(padx=10)
+                    question_entry = Entry(right_frame, textvariable=question_var, width=50)
+                    question_entry.pack(padx=10, pady=5)
+
+                    option_vars = []
+                    for i in range(4):
+                        option_var = StringVar(value=questions[index]['options'][i])
+                        Label(right_frame, text=f'Opsi {i+1}:').pack(padx=10)
+                        option_entry = Entry(right_frame, textvariable=option_var, width=50)
+                        option_entry.pack(padx=10, pady=2)
+                        option_vars.append(option_var)
+
+                    correct_var = StringVar(value=questions[index]['correct_option'])
+                    Label(right_frame, text='Jawaban Benar (0-3):').pack(padx=10)
+                    correct_entry = Entry(right_frame, textvariable=correct_var, width=10)
+                    correct_entry.pack(padx=10, pady=5)
+
+                    def save_edits():
+                        questions[index]['question'] = question_var.get()
+                        for i in range(4):
+                            questions[index]['options'][i] = option_vars[i].get()
+                        questions[index]['correct_option'] = int(correct_var.get())
+                        save_questions(questions)
+                        messagebox.showinfo('Sukses', 'Soal berhasil diperbarui!')
+                        clear_right_frame()
+
+                    Button(right_frame, text='Simpan Perubahan', command=save_edits).pack(pady=10)
+                else:
+                    messagebox.showerror('Error', 'Index soal tidak valid!')
+            except ValueError:
+                messagebox.showerror('Error', 'Masukkan index yang valid!')
+
+        Button(right_frame, text='Load Soal', command=load_question).pack(pady=5)
+
+    def delete_question():
+        clear_right_frame()
+        Label(right_frame, text='Hapus Soal', font=('Arial', 16, 'bold')).pack(pady=10)
+        Label(right_frame, text='Index Soal:').pack(padx=10)
+        index_entry = Entry(right_frame, width=10)
+        index_entry.pack(pady=5)
+
+        def confirm_delete():
+            try:
+                index = int(index_entry.get())
+                questions = load_questions()
+                if 0 <= index < len(questions):
+                    questions.pop(index)
+                    save_questions(questions)
+                    messagebox.showinfo('Sukses', 'Soal berhasil dihapus!')
+                    clear_right_frame()
+                else:
+                    messagebox.showerror('Error', 'Index soal tidak valid!')
+            except ValueError:
+                messagebox.showerror('Error', 'Masukkan index yang valid!')
+
+        Button(right_frame, text='Hapus Soal', command=confirm_delete).pack(pady=5)
+
+    admin = Tk()
+    admin.title('Admin Dashboard')
+    admin.state('zoomed')
+
+    # Left Menu Frame
+    left_frame = Frame(admin, bg='#333', width=200)
+    left_frame.pack(side=LEFT, fill=Y)
+
+    Button(left_frame, text='Lihat Hasil Ujian', bg='#57a1f8', fg='white', command=view_results).pack(fill=X, pady=5)
+    Button(left_frame, text='Tambah Soal', bg='#57a1f8', fg='white', command=add_question).pack(fill=X, pady=5)
+    Button(left_frame, text='Edit Soal', bg='#57a1f8', fg='white', command=edit_question).pack(fill=X, pady=5)
+    Button(left_frame, text='Hapus Soal', bg='#57a1f8', fg='white', command=delete_question).pack(fill=X, pady=5)
+
+    # Right Content Frame
+    right_frame = Frame(admin, bg='white')
+    right_frame.pack(side=RIGHT, expand=True, fill=BOTH)
+
+    Label(right_frame, text='Selamat Datang di Admin Dashboard', font=('Arial', 16, 'bold'), bg='white').pack(expand=True)
+
+    admin.mainloop()
+    
+# Quiz Window
+def quiz_window():
+    questions = load_questions()
+    score = 0
+
+    def next_question():
+        nonlocal score, index
+        if index < len(questions):
+            question_label.config(text=questions[index]['question'])
+            for i, option in enumerate(questions[index]['options']):
+                option_buttons[i].config(text=option, value=i)
+        else:
+            messagebox.showinfo('Hasil', f'Nilai Anda: {score}/{len(questions)}')
+            quiz.destroy()
+
+    def check_answer():
+        nonlocal score, index
+        if answer_var.get() == questions[index]['correct_option']:
+            score += 1
+        index += 1
+        next_question()
+
+    index = 0
+    quiz = Tk()
+    quiz.title('Quiz')
+    quiz.state('zoomed')
+
+    frame = Frame(quiz)
+    frame.pack(expand=True, fill='both')
+
+    question_label = Label(frame, text='', wraplength=800)
+    question_label.pack(pady=20, fill=X)
+
+    answer_var = IntVar()
+    option_buttons = [Radiobutton(frame, text='', variable=answer_var, value=i) for i in range(4)]
+    for btn in option_buttons:
+        btn.pack(anchor="w")
+
+    Button(frame, text='Submit', command=check_answer).pack(pady=20, fill=X)
+    next_question()
+
+    quiz.mainloop()
+
+if __name__ == '__main__':
+    signin_window()
+ 

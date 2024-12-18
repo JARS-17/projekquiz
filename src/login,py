@@ -1,196 +1,225 @@
 from tkinter import *
-from tkinter import messagebox
-import ast
+from tkinter import messagebox, simpledialog
+import bcrypt
+import json
+import os
 
-root=Tk()
-root.title('Login')
-root.geometry('925x500+300+200')
-root.configure(bg='#fff')
-root.resizable(False, False)
+# Membuat folder 'data' jika belum ada
+if not os.path.exists('data'):
+    os.makedirs('data')
 
-def signin():
-    username=user.get()
-    password=code.get()
-	
-    file=open('data/datasheet.txt')
-    d=file.read()
-    r=ast.literal_eval(d)
-    file.close()
+DATA_FILE = 'data/datasheet.txt'
+QUESTION_FILE = 'data/questions.json'
 
-    print(r.keys())
-    print(r.values())
+# Fungsi Hash Password
+def hash_password(password):
+    return bcrypt.hashpw(password.encode('utf-8'), bcrypt.gensalt())
 
-	
-    if username in r.keys() and password==r[username]:
-        screen=Toplevel(root)
-        screen.title("App")
-        screen.geometry('925x500+300+200')
-        screen.config(bg="white")
-        
-        Label(screen,text="NICE TRY", bg="#fff", font=('Calibri(Body)',50,'bold')).pack(expand=True)
-		
-        screen.mainloop()
-		
-    else:
-        messagebox.showerror("Invalid","Invalid username or password")
-		
-#######################----------------############################################
-def signup_command():
-    window=Toplevel(root)
-    window.title("SignUp")
-    window.geometry('925x500+300+200')
-    window.configure(bg='#fff')
-    window.resizable(False,False)
+def check_password(hashed, password):
+    return bcrypt.checkpw(password.encode('utf-8'), hashed)
 
-    def signup():
-        username = user.get()
-        password = code.get()
-        confirm_password = confirm_code.get()
+# Fungsi untuk Load Data Users
+def load_users():
+    try:
+        with open(DATA_FILE, 'rb') as file:
+            return json.load(file)
+    except FileNotFoundError:
+        return {}
+    except json.JSONDecodeError:
+        return {}
 
-        if password == confirm_password:
-            try:
-                file=open('data/datasheet.txt', 'r+')
-                d=file.read()
-                r=ast.literal_eval(d)
+def save_users(users):
+    with open(DATA_FILE, 'w') as file:
+        json.dump(users, file)
 
-                dict2={username:password}
-                r.update(dict2)
-                file.truncate(0)
-                file.close()
+# Fungsi untuk Load Soal
+def load_questions():
+    try:
+        with open(QUESTION_FILE, 'r') as file:
+            return json.load(file)
+    except (FileNotFoundError, json.JSONDecodeError):
+        return []
 
-                file=open('data/datasheet.txt', 'w')
-                w=file.write(str(r))
+def save_questions(questions):
+    with open(QUESTION_FILE, 'w') as file:
+        json.dump(questions, file)
 
-                messagebox.showinfo('Signup', 'Sucessfully sign up')
-                window.destroy()
+# Fungsi Sign Up
+def signup_window():
+    def register():
+        username = user_entry.get()
+        password = pass_entry.get()
+        role = role_var.get()
 
-            except:
-                file=open('data/datasheet.txt', 'w')
-                pp=str({'Username':'password'})
-                file.write(pp)
-                file.close()
+        if not username or not password or not role:
+            messagebox.showerror('Error', 'Semua kolom harus diisi!')
+            return
+
+        users = load_users()
+
+        if username in users:
+            messagebox.showerror('Error', 'Username sudah terdaftar!')
+            return
+
+        hashed_password = hash_password(password).decode('utf-8')
+        users[username] = {'password': hashed_password, 'role': role}
+        save_users(users)
+        messagebox.showinfo('Sukses', f'Akun {username} berhasil dibuat!')
+        signup.destroy()
+
+    signup = Toplevel()
+    signup.title('Sign Up')
+    signup.state('zoomed')
+    signup.configure(bg='#fff')
+
+    img = PhotoImage(file='assets/login.png')  
+    resized_img = img.subsample(1, 1)
+    img_label = Label(signup, image=resized_img, border=0, bg='white')
+    img_label.image = resized_img
+    img_label.place(relx=0.3, rely=0.5, anchor='center')
+
+    frame = Frame(signup, width=400, height=400, bg='#fff')
+    frame.place(relx=0.7, rely=0.5, anchor='center')
+
+    heading = Label(frame, text='Sign Up', fg="#57a1f8", bg='white', font=('Microsoft Yahei UI Light', 26, 'bold'))
+    heading.pack(pady=20)
+
+    Label(frame, text='Username', bg='white', fg='black', font=('Microsoft Yahei UI Light', 12)).pack(pady=5)
+    user_entry = Entry(frame, width=30, font=('Microsoft Yahei UI Light', 12))
+    user_entry.pack(pady=10)
+
+    Label(frame, text='Password', bg='white', fg='black', font=('Microsoft Yahei UI Light', 12)).pack(pady=5)
+    pass_entry = Entry(frame, width=30, show="*", font=('Microsoft Yahei UI Light', 12))
+    pass_entry.pack(pady=10)
+
+    Label(frame, text='Role (admin/peserta)', bg='white', fg='black', font=('Microsoft Yahei UI Light', 12)).pack(pady=5)
+    role_var = StringVar()
+    role_menu = OptionMenu(frame, role_var, 'admin', 'peserta')
+    role_menu.pack(pady=10)
+
+    Button(frame, text='Register', bg="#57a1f8", fg="white", font=('Microsoft Yahei UI Light', 12), command=register).pack(pady=20)
+
+
+# Fungsi Sign In
+def signin_window():
+    def login():
+        username = user_entry.get()
+        password = pass_entry.get()
+
+        users = load_users()
+
+        if username not in users or not check_password(users[username]['password'].encode('utf-8'), password):
+            messagebox.showerror('Error', 'Username atau password salah!')
+            return
+
+        role = users[username]['role']
+        messagebox.showinfo('Sukses', f'Login berhasil sebagai {role}!')
+        signin.destroy()
+        if role == 'admin':
+            admin_window()
         else:
-            messagebox.showerror('Signup', 'Passwords do not match')
+            quiz_window()
 
-    def sign():
-        window.destroy()
-        
-        
-    img = PhotoImage(file='assets/longin.png')
+    signin = Tk()
+    signin.title('Sign In')
+    signin.state('zoomed')
+    signin.configure(bg='#fff')
 
-    Label(window,image=img,border=0,bg='white').place(x=50,y=90)
+    img = PhotoImage(file='assets/login.png')  
+    resized_img = img.subsample(1, 1)  
+    img_label = Label(signin, image=resized_img, border=0, bg='white')
+    img_label.image = resized_img
+    img_label.place(relx=0.3, rely=0.5, anchor='center')
 
-    frame=Frame(window,width=350,height=390,bg='#fff')
-    frame.place(x=480,y=50)
+    frame = Frame(signin, width=400, height=400, bg='#fff')
+    frame.place(relx=0.7, rely=0.5, anchor='center')
 
-    heading=Label(frame,text='Sign up', fg="#57a1f8",bg='white', font=('Microsoft Yahei UI Light',23,'bold'))
-    heading.place(x=100,y=5)
+    heading = Label(frame, text='Sign In', fg="#57a1f8", bg='white', font=('Microsoft Yahei UI Light', 26, 'bold'))
+    heading.pack(pady=20)
 
-    ####---------------------------
-    def on_enter(e):
-        code.delete(0,'end')
-    def on_leave(e):
-        if code.get()=='':
-            code.insert(0,"Password")
+    Label(frame, text='Username', bg='white', fg='black', font=('Microsoft Yahei UI Light', 12)).pack(pady=5)
+    user_entry = Entry(frame, width=30, font=('Microsoft Yahei UI Light', 12))
+    user_entry.pack(pady=10)
 
-    code = Entry(frame,width=25,fg='black',border=0,bg='white',font=('Microsoft Yahei UI Light', 11))
-    code.place(x=30,y=150)
-    code.insert(0, 'Password')
-    code.bind("<FocusIn>",on_enter)
-    code.bind("FocusIn>",on_leave)
+    Label(frame, text='Password', bg='white', fg='black', font=('Microsoft Yahei UI Light', 12)).pack(pady=5)
+    pass_entry = Entry(frame, width=30, show="*", font=('Microsoft Yahei UI Light', 12))
+    pass_entry.pack(pady=10)
 
-    Frame(frame, width=295,height=2,bg='black').place(x=25,y=177)
+    Button(frame, text='Sign In', bg="#57a1f8", fg="white", font=('Microsoft Yahei UI Light', 12), command=login).pack(pady=20)
+    Button(frame, text='Don\'t have an account? Sign Up', bg="white", fg="#57a1f8", border=0, command=signup_window).pack()
 
-    ####---------------------------
-    def on_enter(e):
-        user.delete(0,'end')
-    def on_leave(e):
-        if user.get()=='':
-            user.insert(0,"Username")
-
-    user = Entry(frame,width=25,fg='black',border=0,bg='white',font=('Microsoft Yahei UI Light', 11))
-    user.place(x=30,y=80)
-    user.insert(0, 'Username')
-    user.bind("<FocusIn>",on_enter)
-    user.bind("FocusIn>",on_leave)
-
-    Frame(frame, width=295,height=2,bg='black').place(x=25,y=107)
-
-    ####---------------------------
-    def on_enter(e):
-        confirm_code.delete(0,'end')
-    def on_leave(e):
-        if confirm_code.get()=='':
-            confirm_code.insert(0,"Confirm Password")
-
-    confirm_code = Entry(frame,width=25,fg='black',border=0,bg='white',font=('Microsoft Yahei UI Light', 11))
-    confirm_code.place(x=30,y=220)
-    confirm_code.insert(0, 'Confirm Password')
-    confirm_code.bind("<FocusIn>",on_enter)
-    confirm_code.bind("FocusIn>",on_leave)
-
-    Frame(frame, width=295,height=2,bg='black').place(x=25,y=257)
-
-    ####---------------------------
-
-    Button(frame,width=39,pady=7,text='Sign Up',bg='#57a1f8',fg='white',border=0,command=signup).place(x=35,y=280)
-    label=Label(frame,text='I have an account', fg='black',bg='white',font=('Microsoft Yahei UI Light', 9))
-    label.place(x=90,y=340)
-
-    signin=Button(frame,width=6,text='Sign in',border=0,bg='white',cursor='hand2',fg='#57a1f8',command=sign)
-    signin.place(x=200,y=340)
+    signin.mainloop()
 
 
-    window.mainloop()
+# Admin Window
+def admin_window():
+    def add_question():
+        question = simpledialog.askstring('Tambah Soal', 'Masukkan soal:')
+        if not question:
+            return
+        options = [simpledialog.askstring('Tambah Opsi', f'Pilihan {i+1}:') for i in range(4)]
+        correct = simpledialog.askinteger('Jawaban Benar', 'Index jawaban benar (0-3):')
 
+        questions = load_questions()
+        questions.append({'question': question, 'options': options, 'correct_option': correct})
+        save_questions(questions)
+        messagebox.showinfo('Sukses', 'Soal berhasil ditambahkan!')
 
-    
-        
-######################-----------------#############################################
-img = PhotoImage(file='assets/login.png')
-Label(root,image=img,bg='white').place(x=50,y=50)
+    admin = Tk()
+    admin.title('Admin - Edit Kuis')
+    admin.state('zoomed')
 
-frame=Frame(root,width=350,height=350,bg='white')
-frame.place(x=480,y=70)
+    frame = Frame(admin)
+    frame.pack(expand=True, fill='both')
 
-heading=Label(frame,text='Sign in', fg='#57a1f8', bg='white',font=('Microsoft Yahei UI Light ',23,'bold'))
-heading.place(x=100,y=5)
-#####---------------------------------------------
-def on_enter(e):
-	user.delete(0,'end')
-def on_leave(e):
-	name=user.get()
-	if name=='':
-		user.insert(0,'Username')
-		
-user = Entry(frame,width=25,fg='black',border=0,bg='white',font=('Micrososft Yahei UI Light', 11))
-user.place(x=30,y=80)
-user.insert(0,'Username')
-user.bind("<FocusIn>",on_enter)
-user.bind("FocusOut>",on_leave)
+    Label(frame, text='Admin Panel', font=('Arial', 16, 'bold')).pack(pady=10)
+    Button(frame, text='Tambah Soal', command=add_question).pack(pady=10, fill=X)
 
-Frame(frame,width=295,height=2,bg='black').place(x=25,y=107)
-#####----------------------------------------------------------------
-def on_enter(e):
-	code.delete(0,'end')
-def on_leave(e):
-	name=code.get()
-	if name=='':
-		code.insert(0,'Password')
+    admin.mainloop()
 
-code = Entry(frame,width=25,fg='black',border=0,bg='white',font=('Micrososft Yahei UI Light', 11))
-code.place(x=30,y=150)
-code.insert(0,'Password')
-code.bind("<FocusIn>",on_enter)
-code.bind("FocusOut>",on_leave)
+# Quiz Window
+def quiz_window():
+    questions = load_questions()
+    score = 0
 
-Frame(frame,width=295,height=2,bg='black').place(x=25,y=177)
-#####----------------------------------------------------------------
-Button(frame,width=39,pady=7,text='Sign In',bg='#57a1f8',fg='white',border=0,command=signin).place(x=35,y=204)
-label=Label(frame,text='Don`t have an account?', fg='black',bg='white',font=('Microsoft Yahei UI Light', 9))
-label.place(x=75,y=270)
+    def next_question():
+        nonlocal score, index
+        if index < len(questions):
+            question_label.config(text=questions[index]['question'])
+            for i, option in enumerate(questions[index]['options']):
+                option_buttons[i].config(text=option, value=i)
+        else:
+            messagebox.showinfo('Hasil', f'Nilai Anda: {score}/{len(questions)}')
+            quiz.destroy()
 
-signup=Button(frame,width=6,text='Sign Up',border=0,bg='white',cursor='hand2',fg='#57a1f8', command=signup_command)
-signup.place(x=215,y=270)
+    def check_answer():
+        nonlocal score, index
+        if answer_var.get() == questions[index]['correct_option']:
+            score += 1
+        index += 1
+        next_question()
 
-root.mainloop()
+    index = 0
+    quiz = Tk()
+    quiz.title('Quiz')
+    quiz.state('zoomed')
+
+    frame = Frame(quiz)
+    frame.pack(expand=True, fill='both')
+
+    question_label = Label(frame, text='', wraplength=800)
+    question_label.pack(pady=20, fill=X)
+
+    answer_var = IntVar()
+    option_buttons = [Radiobutton(frame, text='', variable=answer_var, value=i) for i in range(4)]
+    for btn in option_buttons:
+        btn.pack(anchor="w")
+
+    Button(frame, text='Submit', command=check_answer).pack(pady=20, fill=X)
+    next_question()
+
+    quiz.mainloop()
+
+if __name__ == '__main__':
+    signin_window()
+

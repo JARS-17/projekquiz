@@ -25,32 +25,32 @@ QUESTIONS = [
     {
         "question": "Berapakah jumlah sisi pada segitiga?",
         "options": ["2", "3", "4", "5"],
-        "correct_option": 1
+        "correct_option": 1
     },
     {
         "question": "Hewan darat tercepat di dunia adalah?",
         "options": ["Cheetah", "Singa", "Kuda", "Harimau"],
-        "correct_option": 0
+        "correct_option": 0
     },
     {
         "question": "Siapa penulis novel 'Laskar Pelangi'?",
         "options": ["Andrea Hirata", "Pramoedya Ananta Toer", "Tere Liye", "Habiburrahman El Shirazy"],
-        "correct_option": 0
+        "correct_option": 0
     },
     {
         "question": "Pulau terbesar di Indonesia adalah?",
         "options": ["Jawa", "Sumatra", "Kalimantan", "Sulawesi"],
-        "correct_option": 2
+        "correct_option": 2
     },
     {
         "question": "Siapa tokoh yang terkenal dengan teori gravitasi?",
         "options": ["Albert Einstein", "Isaac Newton", "Galileo Galilei", "Nikola Tesla"],
-        "correct_option": 1
+        "correct_option": 1
     },
     {
         "question": "Berapakah hasil dari 45 - 15?",
         "options": ["25", "30", "35", "40"],
-        "correct_option": 1
+        "correct_option": 1
     }
 ]
 

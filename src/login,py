@@ -76,7 +76,7 @@ def signup_command():
         window.destroy()
         
         
-    img = PhotoImage(file='assets/login.png')
+    img = PhotoImage(file='assets/longin.png')
 
     Label(window,image=img,border=0,bg='white').place(x=50,y=90)
 

@@ -1,1 +1,1 @@
-{'Username': 'password', 'admin': '1234', 'Ginda': '1234', 'aldi': '00012', 'Haikal Simbolon': 'simbolon789', 'Lukluk': 'ABCDE', 'ekaltuk': '123456789'}
+{"ginda": {"password": "$2b$12$L9GgBJ0fgV0W97SEpzB2uunigXf9kP59wHu15/0sLHTIw2d53NaRK", "role": "admin"}}

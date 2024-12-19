@@ -159,19 +159,34 @@ def admin_window():
         for widget in right_frame.winfo_children():
             widget.destroy()
 
+    def load_results():
+        file_path = 'data/results.json'
+
+        try:
+            with open(file_path, "r") as file:
+                results = json.load(file)
+                if isinstance(results, list) and all(isinstance(item, dict) for item in results):
+                    return results
+                else:
+                    print("Data tidak valid: Hasil harus berupa list of dictionaries.")
+                    return []
+        except FileNotFoundError:
+            print(f"File '{file_path}' tidak ditemukan.")
+            return []
+        except json.JSONDecodeError as e:
+            print(f"Gagal memuat JSON: {e}")
+            return []
+        
     def view_results():
         clear_right_frame()
         results = load_results()
 
-        # Debugging - pastikan hasil dimuat dengan benar
         print("Loaded Results:", results)
 
-        # Validasi jika file kosong atau data tidak valid
         if not results:
             Label(right_frame, text="Belum ada hasil ujian.", font=('Arial', 14), fg='red', bg='white').pack(pady=10)
             return
 
-        # Sorting data hasil ujian
         try:
             sorted_results = sorted(
                 results, 
@@ -183,7 +198,6 @@ def admin_window():
             Label(right_frame, text="Format data tidak valid!", font=('Arial', 14), fg='red', bg='white').pack(pady=10)
             return
 
-        # Menampilkan hasil
         Label(right_frame, text="Hasil Ujian", font=('Arial', 16, 'bold'), bg='white').pack(pady=10)
         for idx, result in enumerate(sorted_results, start=1):
             username = result.get('username', 'Unknown')
@@ -191,7 +205,7 @@ def admin_window():
             Label(right_frame, text=f"{idx}. {username}: {score}", anchor="w", bg='white').pack(fill=X, padx=10, pady=2)
 
 
-
+    
     def add_question():
         clear_right_frame()
         Label(right_frame, text='Tambah Soal', font=('Arial', 16, 'bold')).pack(pady=10)
